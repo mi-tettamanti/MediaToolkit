@@ -10,11 +10,14 @@
     using MediaToolkit.Options;
     using MediaToolkit.Properties;
     using MediaToolkit.Util;
+    using System.Text;
 
     /// -------------------------------------------------------------------------------------------------
     /// <summary>   An engine. This class cannot be inherited. </summary>
     public class Engine : EngineBase
     {
+        private StringBuilder outputBuilder;
+
         /// <summary>
         ///     Event queue for all listeners interested in conversionComplete events.
         /// </summary>
@@ -36,6 +39,21 @@
         ///     Gets a list of environment variables to be passed to the engine. 
         /// </summary>
         public Dictionary<string, string> EnvironmentVariables { get; private set; }
+
+        /// -------------------------------------------------------------------------------------------------
+        /// <summary>
+        ///     Gets the execution output. 
+        /// </summary>
+        public string Output 
+        { 
+            get 
+            { 
+                if (outputBuilder == null)
+                    return string.Empty;
+
+                return outputBuilder.ToString(); 
+            } 
+        }
 
         /// -------------------------------------------------------------------------------------------------
         /// <summary>
@@ -237,6 +255,8 @@
             foreach (var environmentVariable in EnvironmentVariables)
                 processStartInfo.EnvironmentVariables[environmentVariable.Key] = environmentVariable.Value;
 
+            outputBuilder = new StringBuilder();
+
             using (this.FFmpegProcess = Process.Start(processStartInfo))
             {
                 Exception caughtException = null;
@@ -284,6 +304,10 @@
                         {
                             convertCompleteEvent.TotalDuration = totalMediaDuration;
                             this.OnConversionComplete(convertCompleteEvent);
+                        }
+                        else
+                        {
+                            outputBuilder.AppendLine(received.Data);
                         }
                     }
                     catch (Exception ex)
