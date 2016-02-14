@@ -22,13 +22,20 @@
 
         public Engine()
         {
-            
+            EnvironmentVariables = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
         }
 
-        public Engine(string ffMpegPath) : base(ffMpegPath)
+        public Engine(string ffMpegPath)
+            : base(ffMpegPath)
         {
-            
+            EnvironmentVariables = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
         }
+
+        /// -------------------------------------------------------------------------------------------------
+        /// <summary>
+        ///     Gets a list of environment variables to be passed to the engine. 
+        /// </summary>
+        public Dictionary<string, string> EnvironmentVariables { get; private set; }
 
         /// -------------------------------------------------------------------------------------------------
         /// <summary>
@@ -118,7 +125,7 @@
 
             this.FFmpegEngine(engineParams);
         }
-        
+
         #region Private method - Helpers
 
         private void FFmpegEngine(EngineParameters engineParameters)
@@ -180,7 +187,7 @@
                 };
             }
         }
-        
+
         #endregion
 
         /// -------------------------------------------------------------------------------------------------
@@ -222,10 +229,13 @@
         {
             List<string> receivedMessagesLog = new List<string>();
             TimeSpan totalMediaDuration = new TimeSpan();
-         
-            ProcessStartInfo processStartInfo = engineParameters.HasCustomArguments 
+
+            ProcessStartInfo processStartInfo = engineParameters.HasCustomArguments
                                               ? this.GenerateStartInfo(engineParameters.CustomArguments)
                                               : this.GenerateStartInfo(engineParameters);
+
+            foreach (var environmentVariable in EnvironmentVariables)
+                processStartInfo.EnvironmentVariables[environmentVariable.Key] = environmentVariable.Value;
 
             using (this.FFmpegProcess = Process.Start(processStartInfo))
             {
@@ -243,13 +253,13 @@
 #endif
                     try
                     {
-                        
+
                         receivedMessagesLog.Insert(0, received.Data);
                         if (engineParameters.InputFile != null)
                         {
                             RegexEngine.TestVideo(received.Data, engineParameters);
                             RegexEngine.TestAudio(received.Data, engineParameters);
-                        
+
                             Match matchDuration = RegexEngine.Index[RegexEngine.Find.Duration].Match(received.Data);
                             if (matchDuration.Success)
                             {
